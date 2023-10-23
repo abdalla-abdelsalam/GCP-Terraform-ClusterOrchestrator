@@ -15,7 +15,7 @@ Table of Contents
     - [Storage](#storage)
   - [Access Control and Connectivity](#access-control-and-connectivity)
   - [Prerequisites](#prerequisites)
-  - [Deploying infrastrucutre 🚀](#deploying-infrastrucutre-)
+  - [Deploying infrastructure 🚀](#deploying-infrastructure-)
     - [cloning the Project](#cloning-the-project)
     - [Initialize Terraform in the project directory](#initialize-terraform-in-the-project-directory)
     - [Deploy the infrastructure by running Terraform command.](#deploy-the-infrastructure-by-running-terraform-command)
@@ -103,7 +103,7 @@ To deploy this project, follow the steps below:
 * Clone this project repository to your local machine.
 * Modify the Terraform configuration files to suit your specific requirements, such as changing project-specific variables and credentials.
 
-## Deploying infrastrucutre 🚀
+## Deploying infrastructure 🚀
 
 ### cloning the Project
 
