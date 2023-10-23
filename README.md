@@ -139,7 +139,7 @@ terraform apply --auto-approve
 
 ### Copy the k8s bash script file provided above in the repo then execute it
 
-* the script deploys configmaps, secrets and ncessary services yaml files
+* the script deploys configmaps, secrets and necessary services yaml files
 ![Screenshot from 2023-10-23 21-02-44](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/a8dc8bc3-0489-4d63-8d41-d2688d10ee93)
 
 ### Wait until mongodb pods are running
