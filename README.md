@@ -21,7 +21,7 @@ Table of Contents
     - [Deploy the infrastructure by running Terraform command.](#deploy-the-infrastructure-by-running-terraform-command)
   - [Accessing the managment instance](#accessing-the-managment-instance)
     - [After the Completion we move to the management instance](#after-the-completion-we-move-to-the-management-instance)
-    - [Copy the k8s bash script provided above then execute it](#copy-the-k8s-bash-script-provided-above-then-execute-it)
+    - [Copy the k8s bash script file provided above in the repo then execute it](#copy-the-k8s-bash-script-file-provided-above-in-the-repo-then-execute-it)
     - [Wait until mongodb pods are running](#wait-until-mongodb-pods-are-running)
   - [Project-specific deployment steps for MongoDB replicaset](#project-specific-deployment-steps-for-mongodb-replicaset)
     - [Exec into mongodb-0 pod](#exec-into-mongodb-0-pod)
@@ -137,8 +137,9 @@ terraform apply --auto-approve
 
 ![Screenshot from 2023-10-23 20-52-19](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/1284af0a-201e-4216-b202-61c15a937cf2)
 
-### Copy the k8s bash script provided above then execute it
+### Copy the k8s bash script file provided above in the repo then execute it
 
+* the script deploys configmaps, secrets and ncessary services yaml files
 ![Screenshot from 2023-10-23 21-02-44](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/a8dc8bc3-0489-4d63-8d41-d2688d10ee93)
 
 ### Wait until mongodb pods are running
