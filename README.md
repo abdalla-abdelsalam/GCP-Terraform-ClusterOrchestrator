@@ -7,28 +7,39 @@ Table of Contents
 - [Table of Contents](#table-of-contents)
   - [Description 🧐](#description-)
   - [Technologies Used](#technologies-used)
-  - [Project Workflow](#project-workflow)
+  - [Project diagram](#project-diagram)
+  - [Infrastructure Components](#infrastructure-components)
+    - [Service Accounts](#service-accounts)
+    - [Network](#network)
+    - [Compute](#compute)
+    - [Storage](#storage)
+    - [Deployment Steps](#deployment-steps)
+    - [Access Control and Connectivity](#access-control-and-connectivity)
   - [Prerequisites](#prerequisites)
-  - [Usage 🚀](#usage-)
+  - [Deploying infrastrucutre 🚀](#deploying-infrastrucutre-)
     - [cloning the Project](#cloning-the-project)
-    - [Terraform Backend Initializing](#terraform-backend-initializing)
     - [Initialize Terraform in the project directory](#initialize-terraform-in-the-project-directory)
-  - [Creating Workspaces](#creating-workspaces)
-  - [Managing Variables](#managing-variables)
-  - [Executing Local Provisioner](#executing-local-provisioner)
-  - [Jenkins Integration](#jenkins-integration)
-    - [jenkins server deployment using docker](#jenkins-server-deployment-using-docker)
-    - [Jenkinsfile \& stages](#jenkinsfile--stages)
-      - [before pipeline stages](#before-pipeline-stages)
-      - [stage one](#stage-one)
-      - [stage two](#stage-two)
-      - [stage three](#stage-three)
-      - [stage four](#stage-four)
-    - [jenkins Pipeline execution](#jenkins-pipeline-execution)
-  - [Email Notifications with AWS SES](#email-notifications-with-aws-ses)
-  - [lambda function](#lambda-function)
-  - [Event notifiction in s3 bucket](#event-notifiction-in-s3-bucket)
-  - [Getting an email notifiction](#getting-an-email-notifiction)
+    - [Deploy the infrastructure by running Terraform command.](#deploy-the-infrastructure-by-running-terraform-command)
+  - [accessing the managment instance](#accessing-the-managment-instance)
+    - [After the Completion we move to the management instance](#after-the-completion-we-move-to-the-management-instance)
+    - [Copy the k8s bash script provided above then execute it](#copy-the-k8s-bash-script-provided-above-then-execute-it)
+    - [Wait until mongodb pods are running](#wait-until-mongodb-pods-are-running)
+    - [Exec into mongodb-0 pod](#exec-into-mongodb-0-pod)
+    - [Create user for the app with minimum permissions](#create-user-for-the-app-with-minimum-permissions)
+    - [Create admin user to intiate the replicaset](#create-admin-user-to-intiate-the-replicaset)
+    - [After that we apply the statefulset-after.yaml file](#after-that-we-apply-the-statefulset-afteryaml-file)
+    - [exec again into mongodb-0 pod (authentication is enabled)](#exec-again-into-mongodb-0-pod-authentication-is-enabled)
+    - [Initiate the mongodb replicaset](#initiate-the-mongodb-replicaset)
+    - [Getting the status of the replica](#getting-the-status-of-the-replica)
+    - [Mongodb-0 pod is the primary replica](#mongodb-0-pod-is-the-primary-replica)
+    - [Desploying app yaml file](#desploying-app-yaml-file)
+    - [App deployment pod is up and running](#app-deployment-pod-is-up-and-running)
+    - [Getting the external ip of the load balancer](#getting-the-external-ip-of-the-load-balancer)
+    - [Accessing the ip of the loadbalancer](#accessing-the-ip-of-the-loadbalancer)
+    - [Failing over seniaro](#failing-over-seniaro)
+    - [accessing the load balancer again](#accessing-the-load-balancer-again)
+    - [An Election happened after monodb-0 pod is down and mongodb-1 pod is primary now](#an-election-happened-after-monodb-0-pod-is-down-and-mongodb-1-pod-is-primary-now)
+    - [Follow the project-specific deployment steps for MongoDB, the Node.js web app, and exposure via ingress or load balancing.](#follow-the-project-specific-deployment-steps-for-mongodb-the-nodejs-web-app-and-exposure-via-ingress-or-load-balancing)
   
 
 
@@ -48,190 +59,136 @@ We've utilized a wide range of technologies to develop this project, including:
 *    bash
 *    k8s
 
-## Project Workflow
-![Blank diagram(2)](https://github.com/abdalla-abdelsalam/InfraControl/assets/51873396/d4e38dd2-a8dd-47aa-a1ef-2c4777de0126)
+## Project diagram
+![Screenshot from 2023-10-23 22-11-21](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/c247a28b-73cf-4432-ae9a-d9e71979dabb)
+## Infrastructure Components
+### Service Accounts
+
+The project includes two service accounts with an arbitrary number of associated roles. These service accounts are used to manage access control and permissions for various GCP resources.
+### Network
+
+    1 VPC: A Virtual Private Cloud is set up to provide network isolation for the project's components.
+    2 Subnets: Two subnets are created within the VPC to segregate the network resources.
+    Firewall Rules: The project defines multiple firewall rules to control inbound and outbound traffic.
+    1 NAT: A Network Address Translation (NAT) gateway is established to allow the management VM to access the internet while keeping the GKE cluster isolated.
+
+### Compute
+
+    1 Private VM: A single private virtual machine is provisioned, accessible only through the NAT gateway. This VM serves as a management instance for cluster operations, image building, and Artifact Registry interactions.
+    1 GKE Standard Cluster: A GKE standard cluster spanning three zones is deployed. The GKE cluster is set to be private, ensuring it does not have direct internet access. It will be used to run containerized applications, including the Node.js web app and the MongoDB replica set.
+
+### Storage
+
+    Artifact Registry Repository: An Artifact Registry repository is created to store container images. All images deployed within the project are required to be stored in this repository.
+
+### Deployment Steps
+
+    MongoDB Replica Set Deployment: The project orchestrates the deployment of a MongoDB replica set across three zones, ensuring data redundancy and high availability.
+
+    Node.js Web App Containerization and Deployment: The Node.js web application is containerized using Docker and deployed within the GKE cluster. This application is configured to connect to the MongoDB replica set for data storage and retrieval.
+
+    Web Application Exposure: The web application is exposed to the internet via an ingress controller or load balancer, enabling external access.
+
+### Access Control and Connectivity
+
+    Management VM Access: Only the private management VM has access to the internet through the NAT gateway. This VM serves as the control center for cluster management and image operations.
+
+    GKE Cluster Isolation: The GKE cluster is isolated from the internet to enhance security. It does not have direct internet access but can communicate internally within the GCP infrastructure.
+
+    Artifact Registry Integration: All deployed container images must be stored in the Artifact Registry repository, ensuring a centralized and controlled image management process.
+
 ## Prerequisites
 
 Before getting started, ensure you have the following prerequisites in place:
 
-* Terraform installed on your Jenkins server.
-* AWS CLI configured with necessary credentials and permissions.
-* S3 bucket for storing Terraform state files.
-* dynamodb talbe configured for state lock
-* AWS lambda configured for using ses service.
-* AWS SES configured for sending email notifications (if applicable).
-* Jenkins server with necessary plugins (if applicable).
+To deploy this project, follow the steps below:
 
-## Usage 🚀
+* Set up your Google Cloud Platform account and configure your credentials.
+
+* Install Terraform and ensure it is configured to access your GCP account.
+
+* Clone this project repository to your local machine.
+
+* Modify the Terraform configuration files to suit your specific requirements, such as changing project-specific variables and credentials.
+
+
+## Deploying infrastrucutre 🚀
 ### cloning the Project
 
 1. Clone this repository to your Jenkins server or local machine:
 ```bash
-git clone https://github.com/abdalla-abdelsalam/InfraControl
+git clone https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator.git
 ```
 
 ```bash
-cd  InfraControl
+cd  GCP-Terraform-ClusterOrchestrator
 ```
-### Terraform Backend Initializing
-You can use the below script to create the necessary terraform backend (s3 bucket for storing the state and dynamodb table for state locking)
-![Screenshot from 2023-10-02 17-22-16](https://github.com/abdalla-abdelsalam/InfraControl/assets/51873396/f315ebab-c8dd-4e4e-b8a2-ac6e8c20ab3c)
-
 ### Initialize Terraform in the project directory
 
 ```bash
 terraform init
 ```
-
-## Creating Workspaces
-
-This project includes two predefined workspaces: dev and prod. 
-You can create them using the following commands:
-
-For dev workspace:
-```bash
-terraform workspace new dev
-```
-For prod workspace:
+###  Deploy the infrastructure by running Terraform command.
 
 ```bash
-terraform workspace new prod
+terraform apply --auto-approve
 ```
+![Screenshot from 2023-10-23 20-15-28](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/9ae4bbd9-1ddb-447a-b56a-fc36db6ce638)
+
+## accessing the managment instance
+### After the Completion we move to the management instance
+
+![Screenshot from 2023-10-23 20-52-19](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/1284af0a-201e-4216-b202-61c15a937cf2)
+
+### Copy the k8s bash script provided above then execute it
+
+![Screenshot from 2023-10-23 21-02-44](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/a8dc8bc3-0489-4d63-8d41-d2688d10ee93)
+
+### Wait until mongodb pods are running
+![Screenshot from 2023-10-23 21-12-09](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/7cb15ec5-f0a6-436c-98d8-28f4ee41bbc5)
+
+### Exec into mongodb-0 pod 
+![Screenshot from 2023-10-23 21-26-09](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/fd75acd4-40b8-4034-ab3a-99432b6dfe3d)
+
+### Create user for the app with minimum permissions 
+![Screenshot from 2023-10-23 21-26-37](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/248b3ce8-71a3-4dfc-8ff8-676cd947e7ad)
+
+### Create admin user to intiate the replicaset
+![Screenshot from 2023-10-23 21-27-19](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/e567328c-9119-4261-b575-9ed80d60839c)
+
+### After that we apply the statefulset-after.yaml file 
+![Screenshot from 2023-10-23 21-28-47](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/96a00971-3ebb-47c4-922b-58d4e8912ea8)
+### exec again into mongodb-0 pod (authentication is enabled)
+![Screenshot from 2023-10-23 21-29-36](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/bc883244-4613-41d0-9f5a-541eb95ae5a3)
+
+### Initiate the mongodb replicaset 
+![Screenshot from 2023-10-23 21-30-07](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/031274a5-c45d-4d8a-a333-a6a716acdcee)
+### Getting the status of the replica
+![Screenshot from 2023-10-23 21-32-38](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/ce00c835-8113-4cda-9fec-39fc52852a0a)
+
+### Mongodb-0 pod is the primary replica
+![Screenshot from 2023-10-23 21-53-50](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/7e4dfc21-3513-419a-bcfa-4e9d3118bfd6)
+
+### Desploying app yaml file
+![Screenshot from 2023-10-23 21-33-17](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/c3942a2a-452c-4b36-bfcf-07404f447202)
+
+### App deployment pod is up and running
+![Screenshot from 2023-10-23 21-37-53](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/f477a8d3-ff7c-43fe-a0e2-4d1bb1364042)
+
+### Getting the external ip of the load balancer
+![Screenshot from 2023-10-23 21-38-04](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/1c0a03b2-8feb-40d4-9147-a2d63e88dcc1)
+
+### Accessing the ip of the loadbalancer
+![Screenshot from 2023-10-23 21-38-53](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/2d60432b-94cc-42a2-b952-024af0446daf)
+
+### Failing over seniaro
+![Screenshot from 2023-10-23 21-41-39](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/dfd64744-4d77-4c33-89b4-5e870b2fcc18)
+### accessing the load balancer again
+![Screenshot from 2023-10-23 21-41-55](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/85e2837c-f1a3-4afd-98cb-e693e0abca5f)
+
+### An Election happened after monodb-0 pod is down and mongodb-1 pod is primary now 
+![Screenshot from 2023-10-23 21-45-11](https://github.com/abdalla-abdelsalam/GCP-Terraform-ClusterOrchestrator/assets/51873396/73f8e352-0476-4070-a8a6-de1fa3f4ded0)
+
+###   Follow the project-specific deployment steps for MongoDB, the Node.js web app, and exposure via ingress or load balancing.
 
 
-## Managing Variables
-
-Customize the variable values in the dev.tfvars and prod.tfvars files to match your specific environment requirements.
-
-Select the appropriate workspace for the environment you want to create:
-
-```bash
-terraform workspace select dev
-```
-OR
-```bash
-terraform workspace select prod
-```
-
-Apply the Terraform configuration to create the infrastructure:
-
-```bash
-terraform apply -var-file=dev.tfvars
-```
-dev.tfvars file
-```
-cidr_block = "10.0.0.0/16"
-ami_id = "ami-053b0d53c279acc90"
-instance_type = "t2.micro"
-subnets_pub_cidr = ["10.0.1.0/24","10.0.2.0/24"]
-subnets_priv_cidr = ["10.0.3.0/24","10.0.4.0/24"]
-region = "us-east-1"
-subnets_azs = ["us-east-1a","us-east-1b"]
-```
-OR
-```bash
-terraform apply -var-file=prod.tfvars
-```
-prod.tfvars file
-```
-cidr_block     = "172.0.0.0/16"
-ami_id        = "ami-04e601abe3e1a910f"
-instance_type = "t2.micro"
-subnets_pub_cidr = ["172.0.1.0/24", "172.0.2.0/24"]
-subnets_priv_cidr = ["172.0.3.0/24", "172.0.4.0/24"]
-region        = "eu-central-1"
-subnets_azs   = ["eu-central-1a", "eu-central-1b"]
-
-```
-
-## Executing Local Provisioner
-
-After creating the infrastructure, the local-exec provisioner will print the public IP of the Bastion EC2 instance in the specified environment and saving the value into an inventory file. This is automatically done as part of the Terraform apply process.
-
-```
-  provisioner "local-exec" {
-    command = "echo ${self.public_ip} > inventory"
-  }
-```
-## Jenkins Integration
-
-This project integrates Jenkins for continuous deployment. The Jenkins pipeline configured to accept an env-param, which determines which Terraform environment to apply changes to (dev or prod), also there is an optional param if you want to destroy the infrastructure
-### jenkins server deployment using docker 
-
-You can use this dockerfile for building docker image that includes jenkins server and terrform will be also installed
-![Screenshot from 2023-10-02 16-31-55](https://github.com/abdalla-abdelsalam/InfraControl/assets/51873396/d008a33d-971d-4214-b069-fce8bb8caa62)
-Run the follwoing command to build the image
-```
-docker build -t jenkins-with-terraform .
-```
-Run the following command to start a container from the image
-```
-docker run -d -p 8080:8080 -p 50000:50000 --name jenkins-with-terraform jenkins-with-terraform
-```
-### Jenkinsfile & stages
-#### before pipeline stages
-you should add aws credentials that includes:
-* aws_access_key
-* aws_secrets_access_key
-  
-to jenkins server as secrets file or text
-![Screenshot from 2023-10-02 16-39-45](https://github.com/abdalla-abdelsalam/InfraControl/assets/51873396/9bbc3068-3e8e-4ef8-9b57-d1a1ff798c91)
-
-we will reference these secrests in the jenkinsfile and expose them as environment variables to make terraform able to access aws.
-
-in the image below we also configure 2 parameters to pass to jenkins pipeline before executing :
-* environment (dev or prod)
-* boolean for the destroying option
-![Screenshot from 2023-10-02 16-32-30](https://github.com/abdalla-abdelsalam/InfraControl/assets/51873396/92a55549-ade2-422f-9c49-4ae4ff79a2c3)
-#### stage one
-Intializing terraform and selecting the desired workspace, 
-also create the workspace if not exsits.
-![Screenshot from 2023-10-02 16-32-56](https://github.com/abdalla-abdelsalam/InfraControl/assets/51873396/e0dbe84e-4067-4d88-9385-940b0a9d77fe)
-#### stage two 
-Terraform apply stage with passing the necessary evn variable file and also archieving the inventory file that contains the public ip of the bastian host
-
-![Screenshot from 2023-10-02 16-33-04](https://github.com/abdalla-abdelsalam/InfraControl/assets/51873396/241784c7-de3a-491a-a7dc-94d42ecdb25a)
-
-#### stage three
-This stage is responsible for printing the public ip address of the bastian host
-![Screenshot from 2023-10-02 16-33-08](https://github.com/abdalla-abdelsalam/InfraControl/assets/51873396/b4d091a9-1c56-4102-8256-9ae0ba70d18c)
-
-#### stage four
-This is the destroy stage (only executed if the destroy option is set to true)
-
-![Screenshot from 2023-10-02 16-33-26](https://github.com/abdalla-abdelsalam/InfraControl/assets/51873396/8a4d5f58-ddf7-4e72-ac25-718aa6af26c7)
-
-### jenkins Pipeline execution 
-when applying terraform 
-![Screenshot from 2023-10-02 17-46-47](https://github.com/abdalla-abdelsalam/InfraControl/assets/51873396/69e11502-678a-435d-b1cf-f2f73cbcaa54)
-
-![Screenshot from 2023-10-02 04-45-16](https://github.com/abdalla-abdelsalam/InfraControl/assets/51873396/34fbcda3-29cb-4b84-8bd1-903a10350dce)
-
-Getting the public ip of the bastion host
-![Screenshot from 2023-10-02 04-45-58](https://github.com/abdalla-abdelsalam/InfraControl/assets/51873396/4ee5347a-216c-4303-a481-78d400f74fe7)
-
-The ip matches the one from the aws console
-
-![Screenshot from 2023-10-02 04-46-43](https://github.com/abdalla-abdelsalam/InfraControl/assets/51873396/03d5c3ab-2e42-46a8-b61a-819b4e83eeb0)
-
-when destroying terrform resources
-![Screenshot from 2023-10-02 04-50-56](https://github.com/abdalla-abdelsalam/InfraControl/assets/51873396/87a1c14d-bb82-4c2c-8953-dca350116f7d)
-
-## Email Notifications with AWS SES
-Before using an email address in your Lambda function to send email notifications, it must be verified in AWS SES (Simple Email Service). Follow the verification steps in the AWS SES console to ensure the email address is authorized to send emails.
-![Screenshot from 2023-10-02 05-03-39](https://github.com/abdalla-abdelsalam/InfraControl/assets/51873396/af46e473-1021-4001-991b-b4fa15b9ef54)
-
-## lambda function
-This project includes a Lambda function that sends email notifications using AWS SES when the Terraform state in the S3 bucket is updated.
-
-Also don't forget to give the lambda the necessary permissions to access ses service.
-
-![Screenshot from 2023-10-02 05-10-59](https://github.com/abdalla-abdelsalam/InfraControl/assets/51873396/3ab57340-be9b-4445-a5bd-c88230a92e18)
-
-## Event notifiction in s3 bucket
-Configure an S3 event notification that watches for changes to the Terraform state file in your S3 bucket. When the state file is updated, this event will automatically invoke a Lambda function, enabling real-time responses to state changes and allowing for actions like sending notifications .
-![Screenshot from 2023-10-02 17-29-10](https://github.com/abdalla-abdelsalam/InfraControl/assets/51873396/92b0dedc-c683-4c0f-b3fe-87fc9f372994)
-
-## Getting an email notifiction 
-when an update happens to terraform state file in s3 bucket an email notificdtion sent to indicate that a change in the state happened
-![Screenshot from 2023-10-02 05-23-48](https://github.com/abdalla-abdelsalam/InfraControl/assets/51873396/896f29cd-2b04-4a86-9c21-3dca1d7a6d64)# GCP-Terraform-ClusterOrchestrator

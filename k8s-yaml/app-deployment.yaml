@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-deployment
+  labels:
+    app: my-app
+spec:
+  replicas: 1  # Number of desired replicas
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: my-container
+        image: us-central1-docker.pkg.dev/abdallahmahdy/images-repository/nodejs
+        ports:
+        - containerPort: 3000  # Port the container will listen on
+        env:
+        - name: DBuser
+          valueFrom:
+            configMapKeyRef:
+              name: mongo-configmap
+              key: DBuser
+        - name: DBhosts
+          valueFrom:
+            configMapKeyRef:
+              name: mongo-configmap
+              key: DBhosts
+        - name: DBpass
+          valueFrom:
+            secretKeyRef:
+              name: dbpass-secret
+              key: DBpass
+        

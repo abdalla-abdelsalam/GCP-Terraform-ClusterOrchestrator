@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongo-configmap
+data:
+  DBuser: user
+  DBhosts: mongodb-0.mongodb,mongodb-1.mongodb,mongodb-2.mongodb

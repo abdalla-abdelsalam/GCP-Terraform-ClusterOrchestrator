@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-config
+data:
+  mongod.conf: |
+    security:
+      authorization: enabled
+      keyFile: /home/keyfile/key

@@ -1,0 +1,25 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package.json 
+COPY package.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy the rest of the app
+COPY . .
+
+# we can Set environment variables  into the docker file but this is not secure 
+# we will add the environment variables as configmap and secret objects in k8s yaml
+# ENV WEBport=3000
+# ENV DBuser=user
+# ENV DBpass=password
+# ENV DBhosts="mongodb-0.mongodb,mongodb-1.mongodb,mongodb-2.mongodb"
+
+# Expose the port
+EXPOSE 3000
+
+# Start the app
+CMD [ "node", "index.js" ]

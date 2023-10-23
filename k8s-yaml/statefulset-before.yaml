@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+spec:
+  serviceName: mongodb
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - mongodb
+              topologyKey: kubernetes.io/hostname  # This ensures that the anti-affinity is enforced at the node level
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: mongodb
+        env:
+          - name: MONGO_INITDB_ROOT_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: mongodb-credentials
+                key: username
+          - name: MONGO_INITDB_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mongodb-credentials
+                key: password
+        image: us-central1-docker.pkg.dev/abdallahmahdy/images-repository/mongo
+        command:
+        - "/bin/sh"
+        - "-c"
+        - |
+          cp /home/key-file/key /var &&
+          chmod 600 /var/key &&
+          exec mongod
+        ports:
+        - containerPort: 27017
+        volumeMounts:
+        - name: mongo-data
+          mountPath: /data/db
+        - name: config-volume
+          mountPath: /etc/mongod.conf
+          subPath: mongod.conf
+          readOnly: true
+        - name: credentials
+          mountPath: /etc/secrets
+          readOnly: true
+        - name: keyfile-volume
+          mountPath: /home/key-file
+          readOnly: true
+      volumes:
+      - name: config-volume
+        configMap:
+          name: mongodb-config
+      - name: credentials
+        secret:
+          secretName: mongodb-credentials
+      - name: keyfile-volume
+        secret:
+          secretName: mongodb-keyfile
+  volumeClaimTemplates:
+  - metadata:
+      name: mongo-data
+      annotations:
+        volume.beta.kubernetes.io/storage-class: "fast"
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 3Gi
